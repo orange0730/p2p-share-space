@@ -2,7 +2,7 @@
 
 純前端、去中心化的跨裝置共享空間。開空間的裝置（Host）就是虛擬伺服器，其他裝置（Client）以星狀拓撲只連到 Host。
 
-**線上版**：https://orange0730.github.io/p2p-share-space/
+**線上版**：https://wudodo.me/p2p-share-space/
 
 **技術棧**：Vite + React + Tailwind CSS v4 + Lucide React + PeerJS + qrcode.react + client-zip + vite-plugin-pwa
 

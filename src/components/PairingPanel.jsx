@@ -1,9 +1,11 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { ChevronDown, Copy, Share, TriangleAlert, X } from 'lucide-react';
 import { copyText, roomLink } from '../lib/utils';
+import { isNativeApp } from '../native/platform';
 import { toast } from '../lib/toast';
 
-const isLocalhost = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(location.hostname);
+// 原生 App 的網址也是 localhost，但配對連結會改用公開網址，不需要警告
+const isLocalhost = !isNativeApp() && ['localhost', '127.0.0.1', '[::1]', '::1'].includes(location.hostname);
 
 export default function PairingPanel({ s, collapsed, onToggle }) {
   const link = roomLink(s.roomId);

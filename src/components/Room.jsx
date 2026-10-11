@@ -7,6 +7,7 @@ import ItemCard, { Progress } from './ItemCard';
 import DropOverlay from './DropOverlay';
 import { useEngine } from '../hooks/useEngine';
 import { useUnreadBadge } from '../hooks/useUnreadBadge';
+import { useLiveActivity } from '../hooks/useLiveActivity';
 import { isEditable } from '../lib/utils';
 import { exportZip } from '../lib/exportZip';
 import { toast } from '../lib/toast';
@@ -42,6 +43,7 @@ export default function Room({ engine, onLeave, onRetry, pendingShare, onShareDo
   const [exporting, setExporting] = useState(null); // { done, total } | null
 
   useUnreadBadge(s.items, s.self.id, canSend);
+  useLiveActivity(s);
 
   // 從系統分享選單帶進來的內容：連上空間後自動送出
   useEffect(() => {

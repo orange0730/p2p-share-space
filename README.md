@@ -78,6 +78,10 @@ Service Worker 是自訂的 `src/sw.js`（vite-plugin-pwa 的 injectManifest 模
 
 圖示由 `public/logo.svg` 產生，修改後執行 `npx pwa-assets-generator` 重新產生 PNG。
 
+## iOS App（規劃中）
+
+預計用 Capacitor 包成 iOS App，加入動態島（即時動態）、iOS 分享選單與 Universal Links。網頁端的接口（`src/native/`）與原生端 Swift 範本（`native/ios/`）已經預留好，完整步驟見 [docs/ios-app-plan.md](docs/ios-app-plan.md)。
+
 ## 自架信令伺服器（選用）
 
 預設使用 PeerJS 官方公用伺服器 `0.peerjs.com`（只負責交換連線資訊，不經手檔案內容）。若要自架，複製 `.env.example` 為 `.env.local` 並填入 `VITE_PEER_HOST` 等設定。

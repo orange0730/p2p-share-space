@@ -1,3 +1,5 @@
+import { PUBLIC_URL, isNativeApp } from '../native/platform';
+
 export const ROOM_PREFIX = 'p2pspace-';
 
 export const peerIdFromCode = (code) => ROOM_PREFIX + code;
@@ -24,7 +26,11 @@ export function normalizeRoom(input) {
   return /^[A-Za-z0-9][A-Za-z0-9_-]{2,63}$/.test(v) ? v : null;
 }
 
-export const roomLink = (peerId) => `${location.origin}${location.pathname}?room=${encodeURIComponent(peerId)}`;
+export function roomLink(peerId) {
+  const url = new URL(isNativeApp() ? PUBLIC_URL : `${location.origin}${location.pathname}`);
+  url.searchParams.set('room', peerId);
+  return url.href;
+}
 
 /** crypto.randomUUID 只在安全來源可用，區網 http 測試時需要後備方案。 */
 export function uid() {

@@ -2,6 +2,14 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // 公開網址一律走 HTTPS（PWA 安裝、Service Worker、剪貼簿都需要安全來源）
+      (function () {
+        var h = location.hostname;
+        var local = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[)/.test(h) || /\.(local|localhost|test)$/.test(h);
+        if (location.protocol === 'http:' && !local) location.replace('https:' + location.href.slice(5));
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#4f46e5" />
     <meta name="description" content="純前端、點對點的跨裝置共享空間" />

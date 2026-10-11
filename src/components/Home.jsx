@@ -4,7 +4,7 @@ import InstallButton from './InstallButton';
 import { ArrowLeft, ArrowRight, LogIn, Network, QrCode, Server, ShieldCheck, Zap } from 'lucide-react';
 import { getIdentity, normalizeRoom, setDeviceName } from '../lib/utils';
 
-export default function Home({ onHost, onJoin, initialError }) {
+export default function Home({ onHost, onJoin, initialError, pendingShare, onShareDiscard }) {
   const [joining, setJoining] = useState(!!initialError);
   const [value, setValue] = useState('');
   const [error, setError] = useState(initialError);
@@ -47,6 +47,17 @@ export default function Home({ onHost, onJoin, initialError }) {
             文字與檔案透過 WebRTC 點對點直傳。
           </p>
         </div>
+
+        {pendingShare && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl bg-indigo-50 py-2 pl-4 pr-2 text-sm text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
+            <span className="flex-1">
+              收到 {pendingShare.files.length + (pendingShare.text ? 1 : 0)} 個要分享的項目，建立或加入空間後會自動送出。
+            </span>
+            <button className="btn btn-sm btn-ghost" onClick={onShareDiscard}>
+              取消
+            </button>
+          </div>
+        )}
 
         {!joining ? (
           <div className="grid gap-3">

@@ -50,6 +50,11 @@ export class BaseEngine {
     }, 120);
   }
 
+  /** 目前的傳輸狀態（含尚未 flush 的節流更新） */
+  transferOf(id) {
+    return this.pendingTransfers[id] ?? this.state.transfers[id];
+  }
+
   clearTransfer(id) {
     delete this.pendingTransfers[id];
     if (!(id in this.state.transfers)) return;

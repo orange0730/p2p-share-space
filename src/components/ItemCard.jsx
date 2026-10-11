@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Copy, Download, File, FileArchive, FileAudio, FileImage, FileText, FileVideo, LoaderCircle, Trash2 } from 'lucide-react';
+import { Check, Copy, Download, File, FileArchive, FileAudio, FileImage, FileText, FileVideo, LoaderCircle, Trash2, X } from 'lucide-react';
 import DeviceIcon from './DeviceIcon';
 import Linkify from './Linkify';
 import { copyText, fileKind, formatBytes, formatTime } from '../lib/utils';
@@ -8,7 +8,7 @@ import { toast } from '../lib/toast';
 const FILE_ICONS = { image: FileImage, video: FileVideo, audio: FileAudio, archive: FileArchive, doc: FileText, other: File };
 const LONG_TEXT = 600;
 
-export function Progress({ t }) {
+export function Progress({ t, onCancel }) {
   const pct = t.total ? Math.min(100, Math.floor((t.loaded / t.total) * 100)) : 100;
   return (
     <div className="mt-3">
@@ -20,8 +20,15 @@ export function Progress({ t }) {
           {formatBytes(t.loaded)} / {formatBytes(t.total)}
         </span>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-        <div className="h-full rounded-full bg-indigo-500 transition-[width] duration-150" style={{ width: `${pct}%` }} />
+      <div className="flex items-center gap-2">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+          <div className="h-full rounded-full bg-indigo-500 transition-[width] duration-150" style={{ width: `${pct}%` }} />
+        </div>
+        {onCancel && (
+          <button className="icon-btn -my-2 -mr-2 size-8 hover:text-rose-600" onClick={onCancel} aria-label="取消傳輸" title="取消傳輸">
+            <X size={15} />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -95,7 +102,7 @@ function FileBody({ item, s, engine }) {
         </button>
       </div>
 
-      {transfer && <Progress t={transfer} />}
+      {transfer && <Progress t={transfer} onCancel={engine.cancelTransfer ? () => engine.cancelTransfer(item.id) : undefined} />}
     </div>
   );
 }

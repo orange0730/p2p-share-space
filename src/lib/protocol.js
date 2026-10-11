@@ -6,8 +6,11 @@
  *
  * Client → Host
  *   text          { id, text }
- *   file-meta     { id, name, size, mime }   之後緊接著該檔案的所有分塊
- *   file-request  { id }                     請 Host 傳送檔案內容
+ *   file-meta     { id, name, size, mime }   之後緊接著該檔案的所有分塊（分塊 header.id = 項目 id）
+ *   upload-cancel { id }                     放棄上傳中的檔案
+ *   file-request  { id, rid }                請 Host 傳送檔案內容（分塊 header.id = rid，每次請求都不同，
+ *                                            取消後重新下載不會混到前一次殘留的分塊）
+ *   download-cancel { rid }
  *   delete        { id }
  *   clear         {}                         清除全部內容
  *   rename        { name }                   變更裝置名稱
@@ -18,8 +21,9 @@
  *   item-added    { item }
  *   item-removed  { id }
  *   cleared       {}
- *   file-missing  { id }
- *   room-closed   {}
+ *   file-missing  { id, rid }
+ *   host-leaving  {}                         Host 分頁正在卸載（可能只是重新整理），Client 應自動重連
+ *   room-closed   {}                         Host 主動解散空間
  */
 
 const encoder = new TextEncoder();
@@ -108,8 +112,10 @@ function waitForDrain(dc) {
   });
 }
 
-/** 以分塊 + 背壓方式送出整個 Blob；連線中斷時拋出錯誤。 */
-export async function sendBlob(conn, id, blob, onProgress) {
+const aborted = () => new DOMException('已取消', 'AbortError');
+
+/** 以分塊 + 背壓方式送出整個 Blob；連線中斷或 signal 被取消時拋出錯誤。 */
+export async function sendBlob(conn, id, blob, onProgress, signal) {
   const chunkSize = chunkSizeFor(conn);
   let index = 0;
   let sent = 0;
@@ -117,9 +123,11 @@ export async function sendBlob(conn, id, blob, onProgress) {
     const block = new Uint8Array(await blob.slice(offset, offset + READ_BLOCK).arrayBuffer());
     for (let p = 0; p < block.length; p += chunkSize) {
       const dc = conn.dataChannel;
+      if (signal?.aborted) throw aborted();
       if (!conn.open || !dc || dc.readyState !== 'open') throw new Error('連線已中斷');
       if (dc.bufferedAmount > HIGH_WATER) {
         await waitForDrain(dc);
+        if (signal?.aborted) throw aborted();
         if (dc.readyState !== 'open') throw new Error('連線已中斷');
       }
       const payload = block.subarray(p, p + chunkSize);

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CircleAlert, FolderDown, Inbox, LoaderCircle, RefreshCw, ServerCog, Trash2, Unplug } from 'lucide-react';
+import { CircleAlert, FolderDown, Inbox, LoaderCircle, RefreshCw, ServerCog, Share2, Trash2, Unplug } from 'lucide-react';
 import Header from './Header';
 import PairingPanel from './PairingPanel';
 import Composer from './Composer';
 import ItemCard, { Progress } from './ItemCard';
 import DropOverlay from './DropOverlay';
 import { useEngine } from '../hooks/useEngine';
+import { useUnreadBadge } from '../hooks/useUnreadBadge';
 import { isEditable } from '../lib/utils';
 import { exportZip } from '../lib/exportZip';
 import { toast } from '../lib/toast';
@@ -31,7 +32,7 @@ function FullState({ icon: Icon, spin, title, children, actions }) {
   );
 }
 
-export default function Room({ engine, onLeave, onRetry }) {
+export default function Room({ engine, onLeave, onRetry, pendingShare, onShareDone }) {
   const s = useEngine(engine);
   const isHost = s.role === 'host';
   const canSend = isHost ? s.status === 'ready' : s.status === 'connected';
@@ -39,6 +40,17 @@ export default function Room({ engine, onLeave, onRetry }) {
   const [pairCollapsed, setPairCollapsed] = useState(false);
   const textareaRef = useRef(null);
   const [exporting, setExporting] = useState(null); // { done, total } | null
+
+  useUnreadBadge(s.items, s.self.id, canSend);
+
+  // 從系統分享選單帶進來的內容：連上空間後自動送出
+  useEffect(() => {
+    if (!pendingShare || !canSend) return;
+    if (pendingShare.text) engine.sendText(pendingShare.text);
+    if (pendingShare.files.length) engine.sendFiles(pendingShare.files);
+    toast(`已分享 ${pendingShare.files.length + (pendingShare.text ? 1 : 0)} 個項目`, 'success');
+    onShareDone();
+  }, [pendingShare, canSend, engine, onShareDone]);
 
   const sendFiles = useCallback(
     (files) => {
@@ -97,7 +109,11 @@ export default function Room({ engine, onLeave, onRetry }) {
 
   // ---- 全頁狀態 ----
   if (isHost && s.status === 'starting') {
-    return <FullState icon={LoaderCircle} spin title="正在建立空間…" children="連線至信令伺服器並產生房間代碼" />;
+    return s.resuming ? (
+      <FullState icon={LoaderCircle} spin title="正在恢復空間…" children="以原本的代碼重新上線，其他裝置會自動重新連線。" />
+    ) : (
+      <FullState icon={LoaderCircle} spin title="正在建立空間…" children="連線至信令伺服器並產生房間代碼" />
+    );
   }
   if (s.status === 'error') {
     return (
@@ -150,28 +166,29 @@ export default function Room({ engine, onLeave, onRetry }) {
         <div className="border-b border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
           <p className="mx-auto flex max-w-5xl items-center gap-2 px-4 py-2 text-xs sm:text-sm">
             <ServerCog size={16} className="shrink-0" />
-            此裝置是主控伺服器，請保持分頁開啟。關閉或重新整理將導致共享空間解散。
+            此裝置是主控伺服器，請保持分頁開啟。重新整理可自動恢復，關閉分頁將導致共享空間解散。
           </p>
         </div>
       )}
 
-      {!isHost && ['disconnected', 'closed', 'connecting'].includes(s.status) && (
+      {!isHost && ['disconnected', 'closed', 'reconnecting'].includes(s.status) && (
         <div className="border-b border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
           <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 text-sm">
             <Unplug size={16} className="shrink-0" />
             <span className="flex-1">
               {s.status === 'closed'
-                ? '主控裝置已關閉，共享空間已解散。'
-                : s.status === 'connecting'
-                  ? '正在重新連線…'
-                  : '與主控裝置的連線中斷。'}
+                ? '主控裝置已解散共享空間。'
+                : s.status === 'reconnecting'
+                  ? '與主控裝置的連線中斷，正在自動重新連線…'
+                  : '無法連上主控裝置，空間可能已解散。'}
             </span>
+            {s.status === 'reconnecting' && <LoaderCircle size={16} className="animate-spin" />}
             {s.status === 'disconnected' && (
               <button className="btn btn-sm btn-primary" onClick={() => engine.reconnect()}>
                 <RefreshCw size={14} /> 重新連線
               </button>
             )}
-            {s.status === 'closed' && (
+            {s.status !== 'reconnecting' && (
               <button className="btn btn-sm btn-secondary" onClick={onLeave}>
                 返回首頁
               </button>
@@ -188,6 +205,13 @@ export default function Room({ engine, onLeave, onRetry }) {
         )}
 
         <section className="flex min-w-0 flex-col gap-3">
+          {pendingShare && !canSend && (
+            <div className="flex items-center gap-2 rounded-xl bg-indigo-50 px-4 py-3 text-sm text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
+              <Share2 size={16} className="shrink-0" />
+              有 {pendingShare.files.length + (pendingShare.text ? 1 : 0)} 個分享的項目，連上空間後會自動送出。
+            </div>
+          )}
+
           <Composer
             draft={draft}
             setDraft={setDraft}

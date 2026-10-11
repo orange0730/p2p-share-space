@@ -16,6 +16,8 @@ function statusOf(s) {
       return { tone: 'ok', label: '已連線' };
     case 'connecting':
       return { tone: 'warn', label: '連線中' };
+    case 'reconnecting':
+      return { tone: 'warn', label: '重新連線中' };
     case 'closed':
       return { tone: 'bad', label: '已解散' };
     default:
